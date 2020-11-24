@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>U2-Net tryout</title>
+</head>
+<style>
+    .section{
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .frames{
+        display: flex;
+    }
+    .input-frame__canvas, .output-frame__canvas {
+      width: 320px;
+      height: 240px;
+    }
+    .hide{
+        display: none;
+    }
+</style>
+<body>
+    <section class="section">
+        <div class="frames">
+          <div class="input-frame takePicture">
+            <h3>TAKE A PICTURE</h3>
+            <canvas id="iCanvas" class="input-frame__canvas" width="640" height="480"></canvas>
+            <br/>
+            <button id="btnPicture">TAKE PICTURE</button>
+          </div>
+          <div class="input-frame">
+            <h3>PREVIEW</h3>
+            <img id="iPic" width="320" height="240"></img>
+            <br/>
+            <button class="hide" id="btnOk">USE THIS PICTURE</button>
+          </div>
+        </div>
+    </section>
+    <section class="section removeBackground">
+        <button id="btnRemove">REMOVE BACKGROUND</button>
+        <br/>
+        <img id="oImg" width="320" height="240"></img>
+    </section>
+    <script>
+        {
+            const $iCanvas = document.getElementById('iCanvas');
+            const iCtx = $iCanvas.getContext('2d');
+            const $iCanvasSection = document.querySelector('.takePicture');
+
+            const $iPic = document.getElementById('iPic');
+
+            const $btnPicture = document.getElementById('btnPicture');
+            const $btnOk = document.getElementById('btnOk');
+
+            const $oImg = document.getElementById('oImg');
+            const $btnRemove = document.getElementById('btnRemove');
+            const $oImgSection = document.querySelector('.removeBackground');
+            $oImgSection.classList.add('hide');
+
+            let $video, iCanvasData;
+
+            const init = async() => {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                $video = document.createElement('video');
+                $video.muted = true;
+                $video.autoplay = true;
+                $video.playsinline = true;
+                $video.srcObject = stream;
+
+                if (!$video.captureStream) {
+                    $video.captureStream = () => stream;
+                }
+
+                $video.play();
+
+                $btnPicture.addEventListener('click', process);
+                $btnOk.addEventListener('click', nextStep);
+                $btnRemove.addEventListener('click', removeBackground);
+
+                requestAnimationFrame(draw);
+            };
+
+            const draw = () => {
+                iCtx.drawImage($video, 0,0);
+                requestAnimationFrame(draw);
+            };
+
+            const process = () => {
+                console.log('U2-Net');
+                iCanvasData = $iCanvas.toDataURL('image/jpeg');
+                $iPic.src = iCanvasData;
+                $btnOk.classList.remove('hide');
+                $btnPicture.innerHTML = "RETAKE PICTURE";
+            };
+
+            const nextStep = () => {
+                $btnOk.classList.add('hide');
+                $iCanvasSection.classList.add('hide');
+                $oImgSection.classList.remove('hide');
+            };
+
+            const removeBackground = () => {
+                const inputs = {
+                    "image": iCanvasData,
+                    "threshold": 500
+                };
+
+                fetch('http://localhost:8000/query', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify(inputs)
+                })
+                .then(response => response.json())
+                .then(outputs => {
+                    const { image } = outputs;
+                   $oImg.src = image;
+                })
+            };
+
+            init();
+        }
+    </script>
+</body>
+</html>
