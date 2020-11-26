@@ -206,4 +206,4 @@ The next step is to add an EventListener to btnOk and btnRemove.
 }
 </script>
 ```
-For example images, go to my <a href="http://lkedejonckere.wixsite.com/ppproject">blog</a>.
+For example images, go to my <a href="http://elkedejonckere.wixsite.com/ppproject">blog</a>.
